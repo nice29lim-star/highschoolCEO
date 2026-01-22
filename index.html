@@ -1192,6 +1192,43 @@
             }
             alert(`${year}년 시작! (물가상승: 모든 직원 연봉 10% 인상됨)`);
         }
+
+        // [깃허브 HTML의 <script> 안에 추가할 코드]
+
+// 1. 구글 앱스스크립트 배포 URL (자신의 것으로 교체 필수!)
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/아이디_입력/exec"; 
+
+// 2. 연말 정산 데이터 저장 함수
+function saveYearEndData(userCode, gameData) {
+  // JSONP 요청을 위한 동적 스크립트 생성 (CORS 해결책)
+  const script = document.createElement('script');
+  const callbackName = 'callback_' + Date.now(); // 유니크한 콜백 이름 생성
+  
+  // 응답 처리 함수 (저장 성공 시 실행됨)
+  window[callbackName] = function(response) {
+    if (response.result === 'success') {
+      alert("✅ 연말 정산 데이터가 저장되었습니다!");
+    } else {
+      alert("❌ 저장 실패: " + response.message);
+    }
+    // 뒷정리 (스크립트 태그와 함수 삭제)
+    document.body.removeChild(script);
+    delete window[callbackName];
+  };
+
+  // 데이터 인코딩
+  const encodedData = encodeURIComponent(JSON.stringify(gameData));
+  
+  // [핵심] action=saveCEO, memo=YearEnd 파라미터 전송
+  const requestUrl = `${APPS_SCRIPT_URL}?action=saveCEO&code=${userCode}&data=${encodedData}&memo=YearEnd&callback=${callbackName}`;
+  
+  script.src = requestUrl;
+  document.body.appendChild(script);
+}
+
+// [사용 예시] 연말 정산 완료 로직 마지막에 이 함수를 호출하세요
+// saveYearEndData("0930", { money: 5000, score: 100 });
     </script>
 </body>
+
 </html>
