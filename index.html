@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고교 CEO 챌린지: Money Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Cinzel:wght@700&family=Black+Han+Sans&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 공통 스타일 --- */
+        :root {
+            --bg-color: #f4f6f8; --nav-color: #1a2533; --gold-color: #d4af37;
+            --blue-color: #2980b9; --red-color: #c0392b; --purple-color: #8e44ad; --green-color: #27ae60;
+            --white-color: #ffffff; --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        body { font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); overflow-x: hidden; color: #333; }
+        button { cursor: pointer; border: none; outline: none; transition: 0.2s; }
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* 페이지 레이아웃 */
+        .full-screen-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #2c3e50 0%, #0a0e14 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; text-align: center; }
+        #gamePage, #personnelPage { display: none; padding: 20px; min-height: 100vh; }
+        #personnelPage { background-color: #eef2f3; }
+
+        /* --- 스토리 모드 스타일 --- */
+        .story-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; background-repeat: no-repeat; background-position: center; background-size: contain;
+            z-index: 11000; display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        /* 스토리 0 (시작 버튼) */
+        #storyPage0 { background-color: #000; display: flex; } 
+        .btn-story-start {
+            padding: 20px 50px; font-size: 2rem; font-family: 'Black Han Sans', sans-serif;
+            color: var(--gold-color); background: transparent; border: 3px solid var(--gold-color);
+            cursor: pointer; transition: 0.3s; letter-spacing: 2px;
+        }
+        .btn-story-start:hover { background: var(--gold-color); color: #000; box-shadow: 0 0 20px var(--gold-color); }
+
+        /* 스토리 1 */
+        #storyPage1 { background-image: url('스토리 1.png'); }
+        .story-text-box {
+            background: rgba(0, 0, 0, 0.6); padding: 30px; border-radius: 10px; max-width: 80%;
+            text-align: center; color: white; font-size: 1.5rem; line-height: 1.6;
+            transition: opacity 1s; opacity: 0; position: absolute; bottom: 15%;
+        }
+        .story-highlight-red { color: #e74c3c; font-weight: 900; font-size: 1.8rem; }
+
+        /* 스토리 2 - [수정1] 폰트 크기 대폭 확대 */
+        #storyPage2 { background-image: url('스토리 2.png'); }
+        .s2-text {
+            position: absolute; font-family: 'Black Han Sans', sans-serif; 
+            font-size: 4.5rem; /* 크기 확대 */
+            color: white; 
+            text-shadow: 4px 4px 15px #000; /* 그림자 진하게 */
+            opacity: 0; transition: opacity 1s;
+            white-space: nowrap; /* 줄바꿈 방지 */
+        }
+        .s2-left { top: 40%; left: 10%; transform: translateY(-50%); }
+        .s2-center { top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--gold-color); z-index: 5; }
+        .s2-right { top: 60%; right: 10%; transform: translateY(-50%); }
+
+        /* 스토리 3 - [수정2] 가독성 박스 추가 */
+        #storyPage3 { background-image: url('스토리 3.png'); }
+        .s3-text-container {
+            position: absolute; top: 15%; right: 5%; text-align: right;
+            background: rgba(0, 0, 0, 0.75); /* 반투명 검은 배경 */
+            padding: 40px; 
+            border-radius: 20px;
+            border: 3px solid var(--gold-color); /* 금색 테두리 */
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            opacity: 0; animation: slideLeft 1s forwards;
+            max-width: 80%;
+        }
+        .s3-text {
+            font-family: 'Black Han Sans', sans-serif; font-size: 3rem; line-height: 1.4;
+            color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-story-next {
+            position: absolute; bottom: 50px; right: 50px;
+            padding: 15px 40px; font-size: 1.2rem; background: rgba(255, 255, 255, 0.2);
+            color: white; border: 1px solid white; cursor: pointer; display: none; z-index: 10;
+        }
+        .btn-story-next:hover { background: white; color: black; }
+
+
+        /* 기존 시작 화면 (챌린지 시작) */
+        #startScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('시작.png') no-repeat center center;
+            background-size: contain; background-color: #000;
+            z-index: 10000; display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+        }
+        .btn-main-start {
+            padding: 20px 60px; font-size: 2.2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 900;
+            color: #fff; background: rgba(0, 0, 0, 0.7); border: 3px solid var(--gold-color); border-radius: 50px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.8); cursor: pointer; animation: pulse 2s infinite; letter-spacing: 2px;
+            margin-top: 25vh;
+        }
+        .btn-main-start:hover { background: linear-gradient(45deg, #d4af37, #f1c40f); color: #000; transform: scale(1.05); }
+
+        /* 1. 인트로 */
+        .main-title { font-family: 'Noto Sans KR', sans-serif; font-size: 3.5rem; font-weight: 900; color: var(--gold-color); text-shadow: 0 0 25px rgba(212, 175, 55, 0.6); margin-bottom: 10px; }
+        .sub-title { font-size: 1.5rem; color: #bdc3c7; margin-bottom: 40px; font-weight: 300; }
+        .story-text { font-size: 1.2rem; line-height: 1.8; color: #ecf0f1; margin-bottom: 30px; opacity: 0; transform: translateY(20px); transition: opacity 1s, transform 1s; }
+        .story-highlight { color: var(--gold-color); font-weight: bold; font-size: 1.3rem; }
+        .btn-gold { padding: 15px 40px; font-size: 1.3rem; font-weight: bold; color: #0a0e14; background: var(--gold-color); border-radius: 50px; box-shadow: 0 0 15px var(--gold-color); margin-top: 30px; }
+        .branding-image { width: 100%; max-width: 500px; border-radius: 10px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; animation: fadeIn 3s ease-in forwards 1s; }
+
+        /* 2. 대시보드 */
+        header { background: var(--nav-color); color: var(--white-color); padding: 15px 30px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--card-shadow); border-bottom: 4px solid var(--gold-color); margin-bottom: 20px; }
+        .title-area { display: flex; flex-direction: column; }
+        .title-area h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .top-controls { margin-top: 10px; display: flex; gap: 10px; }
+        .btn-team-control { background: #555; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
+        .btn-main-mission { 
+            background: linear-gradient(to right, #8e44ad, #c0392b); color: white; padding: 10px 20px; 
+            border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 0 10px rgba(142, 68, 173, 0.7);
+            animation: pulse 2s infinite; 
+        }
+
+        .timer-area { display: flex; align-items: center; gap: 15px; }
+        #timerDisplay { font-family: 'Courier New', monospace; font-size: 2.2rem; font-weight: 900; color: var(--gold-color); background: #000; padding: 8px 25px; border-radius: 5px; min-width: 120px; text-align: center; border: 2px solid #444; }
+        .btn-start { background-color: #27ae60; color: white; padding: 10px 15px; border-radius: 5px; font-weight: bold; }
+        .btn-stop { background-color: #e74c3c; color: white; padding: 10px 15px; border-radius: 5px; font-weight: bold; }
+        .btn-reset { background-color: #7f8c8d; color: white; padding: 10px 15px; border-radius: 5px; font-weight: bold; }
+
+        .control-panel { display: flex; gap: 15px; margin-bottom: 25px; align-items: flex-start; }
+        .news-box { flex: 1; background: var(--white-color); padding: 15px; border-radius: 8px; border-left: 6px solid var(--nav-color); display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); min-height: 140px; }
+        .news-label { font-size: 1rem; font-weight: 900; color: #7f8c8d; margin-bottom: 8px; }
+        .scope-badge { font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; color: white; background: #95a5a6; display: inline-block; margin-left: 10px;}
+        .news-text { font-size: 1.6rem; font-weight: bold; color: #333; word-break: keep-all; line-height: 1.4; margin-bottom: 15px; }
+        
+        .admin-controls { display: flex; gap: 5px; align-items: center; background: #eee; padding: 5px; border-radius: 5px; margin-top: 10px; }
+        .admin-controls select, .admin-controls input { padding: 5px; border: 1px solid #ccc; border-radius: 3px; }
+        .btn-apply { background: #2c3e50; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold; font-size: 0.9rem; }
+        .button-group { display: flex; flex-direction: column; gap: 10px; min-width: 220px; }
+        .btn-news { background-color: var(--nav-color); color: white; height: 50px; font-size: 1.1rem; border: 1px solid var(--gold-color); border-radius: 5px; font-weight: bold; }
+        .btn-mission { background-color: var(--purple-color); color: white; height: 50px; font-size: 1.1rem; border-radius: 5px; font-weight: bold; }
+        .btn-hr { background-color: #e67e22; color: white; height: 50px; font-size: 1.1rem; border-radius: 5px; font-weight: bold; border: 1px solid #d35400; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        @media (min-width: 1400px) { .grid-container { grid-template-columns: repeat(4, 1fr); } }
+
+        .team-card { background: var(--white-color); border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 5px solid #ccc; position: relative; transition: all 0.3s; }
+        .team-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .logo-wrapper { width: 100%; height: 80px; border: none; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; margin-bottom: 10px; background-color: #fcfcfc; transition: 0.2s; }
+        .logo-wrapper:hover { background-color: #f0f0f0; }
+        .logo-placeholder { font-size: 0.8rem; color: #aaa; display: flex; flex-direction: column; align-items: center; }
+        .team-logo { width: 100%; height: 100%; object-fit: contain; } 
+
+        .team-name { font-size: 1.5rem; font-weight: 900; border: none; width: 100%; text-align: center; color: #333; background: transparent; margin-bottom: 5px;}
+        .team-name:focus { outline: none; border-bottom: 2px solid var(--gold-color); }
+
+        .input-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; color: #555; align-items: center; }
+        .input-row.value-row { background: #fdf2e9; padding: 5px; border-radius: 4px; font-weight: bold; color: #d35400; }
+        .num-input { width: 90px; text-align: right; padding: 4px; font-size: 1rem; font-weight: bold; border: 1px solid #ddd; border-radius: 4px; }
+        .readonly-input { background-color: #f0f0f0; color: #7f8c8d; border: 1px dashed #ccc; pointer-events: none; }
+        .tax-input { background-color: #f0f0f0; color: #7f8c8d; border: 1px dashed #ccc; pointer-events: none; }
+        .total-money { font-size: 1.4rem; font-weight: 900; color: var(--nav-color); min-height: 35px; text-align: right; margin-top: 15px; }
+        .bar-bg { background-color: #eee; height: 10px; border-radius: 5px; margin-top: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.5s; background-color: var(--nav-color); }
+        .btn-calc { background-color: var(--nav-color); color: white; width: 100%; padding: 15px; font-size: 1.2rem; margin-top: 20px; border-top: 3px solid var(--gold-color); font-weight: bold; border-radius: 5px; }
+
+        .loan-area { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #eee; }
+        .loan-info { font-size: 0.8rem; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .btn-loan { width: 100%; background: #34495e; color: white; padding: 8px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
+        .loan-status { font-size: 0.8rem; color: #c0392b; margin-top: 5px; text-align: right; font-weight: bold; }
+
+        .section-container { margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; }
+        .section-title { font-weight: bold; color: #555; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-add-item { background: none; border: 1px solid #ccc; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; color: #555; font-weight: bold; font-size: 0.8rem;}
+        .btn-add-item:hover { background: #eee; color: #000; }
+        .card-count { color: #e67e22; font-size: 0.85rem; font-weight: bold; }
+        .empty-message { font-size: 0.8rem; color: #aaa; text-align: center; padding: 5px; font-style: italic; }
+
+        .item-tag { background: #eef2f3; padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; }
+        .item-tag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
+        .item-delete { cursor: pointer; color: #c0392b; font-weight: bold; margin-left: 5px; }
+
+        .hired-item { background: #f0f0f0; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd;}
+        .hired-info { display: flex; flex-direction: column; width: 100%; }
+        .hired-name-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .hired-salary-tag { font-size: 0.75rem; color: #7f8c8d; font-weight: normal; }
+        .hired-effect { font-size: 0.75rem; color: #e67e22; font-weight: bold; }
+        .hired-expected { font-size: 0.75rem; color: var(--green-color); font-weight: bold; margin-top: 2px; }
+        .hired-tenure { font-size: 0.7rem; color: #2980b9; font-weight: bold; margin-left: 5px; }
+        .btn-fire { background-color: #e74c3c; color: white; border: none; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; margin-left: 10px; cursor: pointer; white-space: nowrap; height: 30px;}
+        
+        .grade-badge { font-weight: 900; margin-right: 4px; }
+        .grade-badge.S { color: #d4af37; } .grade-badge.A { color: #c0392b; } .grade-badge.B { color: #2980b9; } 
+        .grade-badge.C { color: #7f8c8d; } .grade-badge.Special { color: #8e44ad; }
+
+        /* 모달 (팝업) 스타일 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 90%; max-width: 600px; padding: 30px; border-radius: 15px; text-align: center; position: relative; animation: slideDown 0.5s; border-top: 10px solid var(--purple-color); }
+        .modal-title { font-size: 2rem; font-weight: 900; margin-bottom: 20px; color: var(--purple-color); }
+        .modal-body { font-size: 1.5rem; font-weight: bold; margin-bottom: 30px; line-height: 1.6; white-space: pre-line; }
+        .close-modal { position: absolute; top: 10px; right: 20px; font-size: 2rem; cursor: pointer; color: #aaa; }
+        
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; text-align: left; }
+        .shop-item { border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative;}
+        .shop-item:hover { border-color: var(--gold-color); background: #fffbe6; }
+        .shop-item-name { font-weight: bold; font-size: 1rem; margin-bottom: 5px; color: #333; }
+        .shop-item-cost { font-size: 0.8rem; color: #c0392b; }
+        .shop-item-effect { font-size: 0.75rem; color: var(--blue-color); margin-top: 5px; }
+
+        /* 인재 영입소 */
+        .personnel-header { background: white; padding: 20px; border-radius: 8px; box-shadow: var(--card-shadow); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
+        .btn-back { background-color: #7f8c8d; color: white; padding: 10px 20px; font-size: 1rem; border-radius: 5px; font-weight: bold; margin-left: 10px; }
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background: white; border: 2px solid #ddd; padding: 10px 20px; border-radius: 20px; font-weight: bold; color: #555; white-space: nowrap; }
+        .tab-btn.active { background: var(--nav-color); color: white; border-color: var(--nav-color); }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .person-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column; position: relative; }
+        .grade-S { border-color: #e1b12c; } .grade-A { border-color: #e74c3c; } .grade-B { border-color: #3498db; } .grade-C { border-color: #95a5a6; } .grade-Special { border-color: #8e44ad; }
+        .bg-S { background: #e1b12c; } .bg-A { background: #e74c3c; } .bg-B { background: #3498db; } .bg-C { background: #95a5a6; } .bg-Special { background: #8e44ad; }
+        .pc-header { padding: 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .pc-body { padding: 15px; text-align: center; flex-grow: 1; }
+        .pc-stat { color: #2980b9; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .pc-salary { color: #333; font-size: 1rem; font-weight: bold; margin-bottom: 5px; }
+        .pc-expected { color: var(--green-color); font-weight: 900; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .pc-effect { font-size: 0.8rem; color: #e67e22; font-weight: bold; background: #fff3e0; padding: 5px; border-radius: 4px; margin-bottom: 5px; }
+        .pc-penalty { font-size: 0.8rem; color: #c0392b; font-weight: bold; border-top: 1px dashed #ddd; padding-top: 5px; margin-top: 5px; }
+        .hire-controls { border-top: 1px solid #eee; padding: 10px; display: flex; gap: 5px; justify-content: center; }
+        .team-select { padding: 5px; border-radius: 4px; border: 1px solid #ddd; }
+        .btn-hire-action { background: #27ae60; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
+        .sold-out-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: white; font-size: 1.5rem; font-weight: 900; transform: rotate(-15deg); z-index: 20; pointer-events: none; border: 3px solid white; }
+        .person-card.sold-out { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+        .person-card.sold-out .sold-out-overlay::after { content: "매칭 완료"; }
+        .person-card.locked { opacity: 0.8; pointer-events: none; background: #eee; }
+        .person-card.locked .overlay { background: rgba(50,50,50,0.85); color: #ecf0f1; font-size: 1.2rem; font-weight: bold; flex-direction: column; }
+        .person-card.locked .overlay i { font-size: 2rem; margin-bottom: 5px; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 10; pointer-events: none; border: 3px solid white; }
+
+        .blink-red { animation: blink 1s infinite; background-color: #fdebd0; border-color: var(--red-color); }
+        .blink-blue { animation: blink 1s infinite; background-color: #ebf5fb; border-color: var(--blue-color); }
+        .blink-purple { animation: blink 1s infinite; background-color: #f3e5f5; border-color: var(--purple-color); }
+        @keyframes blink { 50% { opacity: 0.7; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideLeft { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 20px rgba(212, 175, 55, 0.8); } 50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(212, 175, 55, 1); } 100% { transform: scale(1); box-shadow: 0 0 20px rgba(212, 175, 55, 0.8); } }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    
+    <div id="storyPage0" class="story-page" style="display:flex;">
+        <button class="btn-story-start" onclick="startStory()"> &lt; 스토리 시작 &gt; </button>
+    </div>
+
+    <div id="storyPage1" class="story-page">
+        <div class="story-text-box" id="s1-text">대한민국을 이끈 최고의 기업 <span style="color:#f1c40f; font-weight:bold;">아워스토리</span> 송명석 대표.<br>은퇴를 앞두고 돌아보니 기쁨, 후회 만감이 교차한다.</div>
+        <button class="btn-story-next" id="btnS1Next" onclick="nextToStory2()">다 음</button>
+    </div>
+
+    <div id="storyPage2" class="story-page">
+        <div class="s2-text s2-left" id="s2-text1">부를 원하나?</div>
+        <div class="s2-text s2-center" id="s2-text2">명예를 원하나?</div>
+        <div class="s2-text s2-right" id="s2-text3">힘과 권력을 원하나?</div>
+        <button class="btn-story-next" id="btnS2Next" onclick="nextToStory3()">다 음</button>
+    </div>
+
+    <div id="storyPage3" class="story-page">
+        <div class="s3-text-container">
+            <div class="s3-text">
+                원한다면 모두 주지!<br>
+                <span style="color:#f1c40f; font-size:4rem;">혁신하고, 도전하라!</span><br>
+                모든 것이 너희들의 것이다!
+            </div>
+        </div>
+        <button class="btn-story-next" id="btnS3Next" style="display: block;" onclick="finishStory()">챌린지 시작</button>
+    </div>
+
+    <div id="startScreen">
+        <button class="btn-main-start" onclick="goToIntro()">챌린지 시작</button>
+    </div>
+
+    <div id="introPage" class="full-screen-page" style="display: none;">
+        <div class="content-box">
+            <div class="main-title">고교 CEO 챌린지: Money Game</div>
+            <div class="sub-title">대한민국 경제를 이끌어갈 새로운 주역을 찾습니다</div>
+            <div id="storyContainer1">
+                <p class="story-text" id="line1-1">당신에게 주어진 종잣돈 <span class="story-highlight">5,000만 원.</span></p>
+                <p class="story-text" id="line1-2">하지만 인재들의 몸값은 비쌉니다.<br>기대 매출은 연봉의 절반도 되지 않습니다.</p>
+                <p class="story-text" id="line1-3">그럼에도 불구하고 <span class="story-highlight">기업 가치(점수)</span>를 높이기 위해<br>과감하게 투자하고 위기를 방어하십시오.</p>
+            </div>
+            <button class="btn-gold" id="enterBtn1" style="opacity:0;" onclick="showBrandingPage()">도전 수락 (NEXT)</button>
+        </div>
+    </div>
+
+    <div id="brandingPage" class="full-screen-page" style="display: none;">
+        <div class="content-box">
+            <div class="main-title" style="font-size: 2.5rem;">정체성을 확립하라</div>
+            <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80" alt="Business Strategy" class="branding-image">
+            <p class="story-text" style="opacity: 1; transform: translateY(0); margin-top: 30px;">당신의 팀은 세상에 어떤 가치를 전달할 것인가?<br>지금 이 순간, 당신의 기업을 정의하고 <span class="story-highlight">역사의 시작</span>을 알려라.</p>
+            <button class="btn-gold" onclick="startGameDashboard()">시장 진입 (START GAME)</button>
+        </div>
+    </div>
+
+    <div id="gamePage">
+        <header>
+            <div class="title-area">
+                <h1>고교 CEO 챌린지: MONEY GAME</h1>
+                <p>FY <span id="yearDisplay">2025</span> | <span id="roundDisplay">1 라운드 (B/C급 영입 가능)</span></p>
+                <div class="top-controls">
+                    <button class="btn-team-control" onclick="addTeam()">+ 조 추가</button>
+                    <button class="btn-team-control" onclick="removeTeam()">- 조 삭제</button>
+                    <button class="btn-main-mission" onclick="showMainMission()">🏆 메인 미션</button>
+                </div>
+            </div>
+            <div class="timer-area">
+                <div style="text-align: right;">
+                    <div class="timer-label">D-DAY</div>
+                    <div id="timerDisplay">365일</div>
+                </div>
+                <div>
+                    <button class="btn-start" onclick="timerStart()">시작</button>
+                    <button class="btn-stop" onclick="timerStop()">정지</button>
+                    <button class="btn-reset" onclick="timerReset()">초기화</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="control-panel">
+            <div class="news-box" id="newsBox">
+                <div class="news-header">
+                    <div class="news-label" id="newsLabel"></div>
+                    <div class="scope-badge" id="scopeBadge" style="display:none;"></div>
+                </div>
+                <div class="news-text" id="newsText">게임을 시작하려면 타이머 '시작' 버튼을 누르세요.</div>
+                
+                <div class="admin-controls">
+                    <select id="manualTeamSelect" class="team-select-all"></select>
+                    <input type="number" id="manualAmount" placeholder="금액(만)" style="width:80px;">
+                    <select id="manualType">
+                        <option value="rev">매출(+)</option>
+                        <option value="cost">비용(+)</option>
+                        <option value="cap_plus">자본(+)</option>
+                        <option value="cap_minus">자본(-)</option>
+                    </select>
+                    <button class="btn-apply" onclick="applyManualEffect()">적용</button>
+                </div>
+                <div style="font-size:0.8rem; color:#aaa; margin-top:5px;" id="remainCount"></div>
+            </div>
+            <div class="button-group">
+                <button class="btn-news" onclick="pickRandomNews()"><i class="fas fa-newspaper"></i> 경제 뉴스 속보 (랜덤)</button>
+                <button class="btn-mission" onclick="pickMission()"><i class="fas fa-bolt"></i> 돌발 미션</button>
+                <button class="btn-hr" onclick="togglePersonnelPage()"><i class="fas fa-user-tie"></i> 인재 영입소 (HR)</button>
+            </div>
+        </div>
+
+        <div class="grid-container" id="dashboardGrid"></div>
+
+        <div style="text-align: center;">
+            <button class="btn-calc" onclick="nextRound()">🔄 연말 결산 및 다음 해로 이동</button>
+        </div>
+    </div>
+
+    <div id="personnelPage">
+        <div class="personnel-header">
+            <div class="personnel-title">
+                <h2><i class="fas fa-users"></i> 글로벌 인재 영입소</h2>
+                <span style="color:#666; font-size: 0.9rem;">영입비용(1회)과 연봉(매년) 발생. 근속 연수에 따라 매출이 2배씩 증가합니다.</span>
+            </div>
+            <div class="search-area">
+                <input type="text" id="searchInput" placeholder="🔍 인재 이름 검색..." onkeyup="searchPersonnel()">
+                <button class="btn-back" onclick="togglePersonnelPage()"> 대시보드로 복귀</button>
+            </div>
+        </div>
+
+        <div class="tab-menu">
+            <button class="tab-btn active" onclick="filterPersonnel('all', this)">전체 보기</button>
+            <button class="tab-btn" onclick="filterPersonnel('dev', this)">💻 개발/생산</button>
+            <button class="tab-btn" onclick="filterPersonnel('mkt', this)">📢 마케팅/영업</button>
+            <button class="tab-btn" onclick="filterPersonnel('mng', this)">💼 경영/전략</button>
+            <button class="tab-btn" onclick="filterPersonnel('special', this)">🃏 특수/기타</button>
+        </div>
+
+        <div class="card-grid" id="cardGrid"></div>
+    </div>
+
+    <div id="missionModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-title" id="modalTitle">TITLE</div>
+            <div class="modal-body" id="modalBody">Body Text</div>
+            <div class="admin-controls" id="modalAdminControls" style="justify-content: center; margin-top:20px; display:none;">
+                <select id="modalTeamSelect" class="team-select-all"></select>
+                <input type="number" id="modalAmount" placeholder="금액(만)" style="width:100px;">
+                <select id="modalType">
+                    <option value="rev">매출(+)</option>
+                    <option value="cost">비용(+)</option>
+                    <option value="cap_plus">자본(+)</option>
+                    <option value="cap_minus">자본(-)</option>
+                </select>
+                <button class="btn-apply" onclick="applyModalEffect()">적용</button>
+            </div>
+            <div id="shopGrid" class="shop-grid" style="display:none; margin-top:20px;"></div>
+        </div>
+    </div>
+
+
+    <script>
+        // *** 스토리 모드 스크립트 ***
+        function startStory() {
+            document.getElementById('storyPage0').style.display = 'none';
+            document.getElementById('storyPage1').style.display = 'flex';
+            
+            const textBox = document.getElementById('s1-text');
+            setTimeout(() => { textBox.style.opacity = 1; }, 500);
+
+            // 3초 후 텍스트 변경
+            setTimeout(() => {
+                textBox.style.opacity = 0;
+                setTimeout(() => {
+                    textBox.innerHTML = "<span class='story-highlight-red'>그러나,</span><br>자녀가 없어 후계자를 정하지 못한 그가<br>파격적인 제안을 한다!";
+                    textBox.style.opacity = 1;
+                    document.getElementById('btnS1Next').style.display = 'inline-block';
+                }, 1000);
+            }, 3500);
+        }
+
+        function nextToStory2() {
+            document.getElementById('storyPage1').style.display = 'none';
+            document.getElementById('storyPage2').style.display = 'flex';
+            
+            setTimeout(() => { document.getElementById('s2-text1').style.opacity = 1; }, 500);
+            setTimeout(() => { document.getElementById('s2-text2').style.opacity = 1; }, 2000);
+            setTimeout(() => { document.getElementById('s2-text3').style.opacity = 1; }, 3500);
+            setTimeout(() => { document.getElementById('btnS2Next').style.display = 'block'; }, 4000);
+        }
+
+        function nextToStory3() {
+            document.getElementById('storyPage2').style.display = 'none';
+            document.getElementById('storyPage3').style.display = 'flex';
+        }
+
+        function finishStory() {
+            document.getElementById('storyPage3').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex'; // 기존 시작 화면 노출
+        }
+
+        // *** 1. 데이터 정의 (최상단) ***
+        let round = 1, year = 2025;
+        let currentFilter = 'all';
+        // baseCost: 인건비 및 수동 입력 비용 (사무실/복지 비용 제외)
+        let teams = [
+            { id: 1, name: '1조', color: '#3498db', logo: null, valueUps: [], welfares: [], baseCost: 0 },
+            { id: 2, name: '2조', color: '#e67e22', logo: null, valueUps: [], welfares: [], baseCost: 0 },
+            { id: 3, name: '3조', color: '#9b59b6', logo: null, valueUps: [], welfares: [], baseCost: 0 },
+            { id: 4, name: '4조', color: '#2ecc71', logo: null, valueUps: [], welfares: [], baseCost: 0 }
+        ];
+        let teamLoans = { 1: [], 2: [], 3: [], 4: [] };
+
+        const mainMissions = {
+            1: "설립 초기: 팀의 비전을 정하고 로고를 등록하세요. (+500만)",
+            2: "시장 진입: B급 이상의 인재를 2명 이상 영입하세요. (+1,000만)",
+            3: "성장: 연 매출 3억 원을 달성하세요. (+2,000만)",
+            4: "안정화: 사옥(건물)을 매입하세요. (기업가치 +1000)"
+        };
+
+        const valueUpItems = [
+            { id: 'v1', name: '작은 사무실', cost: 0, maintenance: 2400, value: 100 },
+            { id: 'v2', name: '중간 사무실', cost: 0, maintenance: 3600, value: 150 },
+            { id: 'v3', name: '큰 사무실', cost: 0, maintenance: 6000, value: 200 },
+            { id: 'v4', name: '사옥(건물)', cost: 100000, maintenance: 10000, value: 1000 }
+        ];
+        
+        // [수정1 & 3] 성장률 조정 (5%, 10%) 및 설명 텍스트 제거
+        const welfareItems = [
+            { id: 'w1', name: '성과금 100%', type: 'recurring', costRate: 1.0, growthRate: 0.05, desc: '전 직원 월급 100%(1개월치) 지급' },
+            { id: 'w2', name: '성과금 200%', type: 'recurring', costRate: 2.0, growthRate: 0.10, desc: '전 직원 월급 200%(2개월치) 지급' },
+            { id: 'w3', name: '업무는 템빨', type: 'one-time', cost: 5000, value: 50, desc: '일회성 비용 5천, 기업가치 +50' }
+        ];
+
+        const personnelData = [
+            { id:1, type: 'dev', name: '천재 AI 개발자', grade: 'S', stat: '기술력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '경쟁사 해킹 방어', penaltyVal: 15000, penalty: '위약금 1.5억', owner: null },
+            { id:2, type: 'dev', name: '애플 출신 디자이너', grade: 'S', stat: '브랜드 +40', salary: 9000, salaryDisplay: '9,000만', revenue: 4500, expected: '💰 매출 +4,500만', effect: '제품 가격 1.5배 책정', penaltyVal: 13000, penalty: '위약금 1.3억', owner: null },
+            { id:51, type: 'dev', name: '우주공학 전문가', grade: 'S', stat: '기술력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '신기술 특허 부스트', penaltyVal: 15000, penalty: '위약금 1.5억', owner: null },
+            { id:52, type: 'dev', name: '바이오 생명공학자', grade: 'S', stat: '기술력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '신약 개발 성공 확률 UP', penaltyVal: 15000, penalty: '위약금 1.5억', owner: null },
+            { id:3, type: 'dev', name: '풀스택 개발자', grade: 'A', stat: '기술력 +30', salary: 7000, salaryDisplay: '7,000만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '혼자서 2인분', penaltyVal: 5000, penalty: '위약금 5,000만', owner: null },
+            { id:4, type: 'dev', name: '공장 자동화 마스터', grade: 'A', stat: '생산력 +30', salary: 6500, salaryDisplay: '6,500만', revenue: 3000, expected: '💰 매출 +3,000만', effect: '생산 미션 시간 연장', penaltyVal: 4000, penalty: '공장 재설정비 4,000만', owner: null },
+            { id:5, type: 'dev', name: '화이트해커', grade: 'A', stat: '기술력 +25', salary: 6000, salaryDisplay: '6,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '정보 유출 위기 면제', penaltyVal: 4000, penalty: '보안 복구비 4,000만', owner: null },
+            { id:53, type: 'dev', name: '블록체인 전문가', grade: 'A', stat: '기술력 +30', salary: 7000, salaryDisplay: '7,000만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '가상화폐 결제 시스템 도입', penaltyVal: 5000, penalty: '위약금 5,000만', owner: null },
+            { id:54, type: 'dev', name: '데이터 센터장', grade: 'A', stat: '기술력 +25', salary: 6500, salaryDisplay: '6,500만', revenue: 3000, expected: '💰 매출 +3,000만', effect: '서버 안정화', penaltyVal: 4500, penalty: '위약금 4,500만', owner: null },
+            { id:6, type: 'dev', name: '베테랑 엔지니어', grade: 'B', stat: '기술력 +20', salary: 5000, salaryDisplay: '5,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '-', penaltyVal: 2000, penalty: '퇴직금 2,000만', owner: null },
+            { id:7, type: 'dev', name: 'UI/UX 디자이너', grade: 'B', stat: '브랜드 +15', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '-', penaltyVal: 1500, penalty: '디자인 저작권료 1,500만', owner: null },
+            { id:8, type: 'dev', name: '품질 관리자(QC)', grade: 'B', stat: '품질 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '불량품 벌금 면제', penaltyVal: 1500, penalty: '퇴직금 1,500만', owner: null },
+            { id:55, type: 'dev', name: '유튜브 편집자', grade: 'B', stat: '기술력 +15', salary: 4000, salaryDisplay: '4,000만', revenue: 1500, expected: '💰 매출 +1,500만', effect: '홍보영상 제작 속도 UP', penaltyVal: 1000, penalty: '퇴직금 1,000만', owner: null },
+            { id:9, type: 'dev', name: '성실한 코딩 노예', grade: 'C', stat: '기술력 +10', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '야근 가능', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:10, type: 'dev', name: '손이 빠른 조립공', grade: 'C', stat: '생산력 +15', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '-', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:56, type: 'dev', name: '단기 아르바이트', grade: 'C', stat: '생산력 +5', salary: 2000, salaryDisplay: '2,000만', revenue: 500, expected: '💰 매출 +500만', effect: '-', penaltyVal: 200, penalty: '위약금 200만', owner: null },
+            { id:11, type: 'mkt', name: '100만 유튜버', grade: 'S', stat: '홍보력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: 'SNS 미션 자동 성공', penaltyVal: 20000, penalty: '위약금 2억', owner: null },
+            { id:12, type: 'mkt', name: '전설의 영업왕', grade: 'S', stat: '판매력 +40', salary: 8500, salaryDisplay: '8,500만', revenue: 4000, expected: '💰 매출 +4,000만', effect: '경쟁사 매출 10% 흡수', penaltyVal: 15000, penalty: '고객 유출 손실 1.5억', owner: null },
+            { id:57, type: 'mkt', name: '글로벌 M&A 전문가', grade: 'S', stat: '판매력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '기업 인수 시 비용 할인', penaltyVal: 15000, penalty: '위약금 1.5억', owner: null },
+            { id:58, type: 'mkt', name: '전직 장관', grade: 'S', stat: '홍보력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '정부 과제 수주 확률 UP', penaltyVal: 20000, penalty: '이미지 실추 손실 2억', owner: null },
+            { id:13, type: 'mkt', name: '카피라이팅 장인', grade: 'A', stat: '브랜드 +30', salary: 7000, salaryDisplay: '7,000만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '-', penaltyVal: 5000, penalty: '위약금 5,000만', owner: null },
+            { id:14, type: 'mkt', name: '글로벌 마케터', grade: 'A', stat: '해외영업 +30', salary: 7500, salaryDisplay: '7,500만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '환율 하락 시 이득', penaltyVal: 5000, penalty: '해외 지사 철수비 5,000만', owner: null },
+            { id:15, type: 'mkt', name: '데이터 분석가', grade: 'A', stat: '분석력 +25', salary: 6000, salaryDisplay: '6,000만', revenue: 3000, expected: '💰 매출 +3,000만', effect: '위기/호재 미리보기', penaltyVal: 4000, penalty: '위약금 4,000만', owner: null },
+            { id:59, type: 'mkt', name: '브랜드 건축가', grade: 'A', stat: '브랜드 +35', salary: 7500, salaryDisplay: '7,500만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '브랜드 가치 상승', penaltyVal: 5000, penalty: '위약금 5,000만', owner: null },
+            { id:16, type: 'mkt', name: 'SNS 중독자', grade: 'B', stat: '홍보력 +20', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '트렌드 힌트 제공', penaltyVal: 2000, penalty: '마케팅비 2,000만 손실', owner: null },
+            { id:17, type: 'mkt', name: '파워 블로거', grade: 'B', stat: '홍보력 +15', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '-', penaltyVal: 1000, penalty: '악성 루머 벌금 1,000만', owner: null },
+            { id:18, type: 'mkt', name: 'CS 팀장', grade: 'B', stat: '평판 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '불매 운동 방어', penaltyVal: 1500, penalty: '퇴직금 1,500만', owner: null },
+            { id:60, type: 'mkt', name: '매장 매니저', grade: 'B', stat: '판매력 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '오프라인 매출 증대', penaltyVal: 1500, penalty: '퇴직금 1,500만', owner: null },
+            { id:19, type: 'mkt', name: '전단지 배포의 신', grade: 'C', stat: '판매력 +10', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '몸쓰는 미션 가산점', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:20, type: 'mkt', name: '친화력 갑 신입', grade: 'C', stat: '영업력 +10', salary: 3200, salaryDisplay: '3,200만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '-', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:61, type: 'mkt', name: '전화 상담원', grade: 'C', stat: '영업력 +5', salary: 2500, salaryDisplay: '2,500만', revenue: 500, expected: '💰 매출 +500만', effect: '고객 응대', penaltyVal: 300, penalty: '위약금 300만', owner: null },
+            { id:21, type: 'mng', name: '월가의 투자 귀재', grade: 'S', stat: '자금력 +50', salary: 10000, salaryDisplay: '1억', revenue: 5000, expected: '💰 매출 +5,000만', effect: '매 라운드 10% 이자', penaltyVal: 20000, penalty: '투자 손실 2억', owner: null },
+            { id:22, type: 'mng', name: '김앤장 출신 변호사', grade: 'S', stat: '방어력 +40', salary: 9000, salaryDisplay: '9,000만', revenue: 4500, expected: '💰 매출 +4,500만', effect: '모든 법적 벌금 면제', penaltyVal: 15000, penalty: '법률 자문료 1.5억 청구', owner: null },
+            { id:23, type: 'mng', name: '칼같은 회계사', grade: 'A', stat: '절세 +30', salary: 7000, salaryDisplay: '7,000만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '세금/비용 20% 감면', penaltyVal: 5000, penalty: '세무 조사 리스크 증가', owner: null },
+            { id:24, type: 'mng', name: '인사팀장(헤드헌터)', grade: 'A', stat: '인사 +30', salary: 6000, salaryDisplay: '6,000만', revenue: 3000, expected: '💰 매출 +3,000만', effect: '인재 영입 할인', penaltyVal: 4000, penalty: '위약금 4,000만', owner: null },
+            { id:25, type: 'mng', name: '협상의 달인', grade: 'A', stat: '협상력 +25', salary: 6500, salaryDisplay: '6,500만', revenue: 3000, expected: '💰 매출 +3,000만', effect: '원자재 구매 할인', penaltyVal: 4000, penalty: '거래처 끊김 (비용 4,000만)', owner: null },
+            { id:62, type: 'mng', name: '수석 아트 디렉터', grade: 'A', stat: '브랜드 +30', salary: 7000, salaryDisplay: '7,000만', revenue: 3500, expected: '💰 매출 +3,500만', effect: '브랜드 리뉴얼', penaltyVal: 5000, penalty: '위약금 5,000만', owner: null },
+            { id:26, type: 'mng', name: '꼼꼼한 총무', grade: 'B', stat: '관리 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '불필요 지출 방지', penaltyVal: 1500, penalty: '비품 재구매비 1,500만', owner: null },
+            { id:27, type: 'mng', name: '정보 수집가', grade: 'B', stat: '정보 +20', salary: 5000, salaryDisplay: '5,000만', revenue: 2500, expected: '💰 매출 +2,500만', effect: '타 팀 자산 엿보기', penaltyVal: 2000, penalty: '보안 위규 벌금 2,000만', owner: null },
+            { id:28, type: 'mng', name: '복지 담당 매니저', grade: 'B', stat: '사기 +15', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '파업 위기 무효화', penaltyVal: 1500, penalty: '퇴직금 1,500만', owner: null },
+            { id:63, type: 'mng', name: '해외 통역사', grade: 'B', stat: '소통 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '해외 바이어 소통', penaltyVal: 1500, penalty: '위약금 1,500만', owner: null },
+            { id:29, type: 'mng', name: '엑셀 마스터', grade: 'C', stat: '업무속도 +10', salary: 3500, salaryDisplay: '3,500만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '정산 시간 단축', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:30, type: 'mng', name: '문서 정리의 신', grade: 'C', stat: '정리 +10', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '-', penaltyVal: 500, penalty: '퇴직금 500만', owner: null },
+            { id:64, type: 'mng', name: '창고 정리원', grade: 'C', stat: '정리 +5', salary: 2500, salaryDisplay: '2,500만', revenue: 500, expected: '💰 매출 +500만', effect: '재고 정리', penaltyVal: 300, penalty: '위약금 300만', owner: null },
+            { id:31, type: 'special', name: '낙하산 금수저', grade: 'Special', stat: '능력치 0', salary: 5000, salaryDisplay: '5,000만', revenue: 0, expected: '💰 파산 부활권', effect: '파산 시 1회 부활', penaltyVal: 25000, penalty: '회장님의 분노 (2.5억)', owner: null },
+            { id:32, type: 'special', name: '산업 스파이', grade: 'Special', stat: '정보 +50', salary: 6000, salaryDisplay: '6,000만', revenue: 0, expected: '💰 기술 탈취', effect: '경쟁 팀 기술력 훔치기', penaltyVal: 10000, penalty: '소송 비용 1억', owner: null },
+            { id:33, type: 'special', name: '열정페이 인턴', grade: 'Special', stat: '열정 +100', salary: 0, salaryDisplay: '0원', revenue: 0, expected: '💰 가성비 최고', effect: '무급 (3라운드 후 퇴사)', penaltyVal: 3000, penalty: '노동청 신고 (3,000만)', owner: null },
+            { id:34, type: 'special', name: '은퇴한 대기업 회장', grade: 'Special', stat: '경영 +50', salary: 1000, salaryDisplay: '1,000만', revenue: 0, expected: '💰 경영 자문', effect: '잔소리 카드 뽑기', penaltyVal: 10000, penalty: '명예 퇴직금 1억', owner: null },
+            { id:35, type: 'special', name: '사내 바리스타', grade: 'Special', stat: '카페인 +30', salary: 3500, salaryDisplay: '3,500만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '팀원 체력 회복', penaltyVal: 1000, penalty: '머신 수리비 1,000만', owner: null },
+            { id:36, type: 'special', name: '분위기 메이커', grade: 'Special', stat: '단합 +30', salary: 3500, salaryDisplay: '3,500만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '단합 미션 보너스', penaltyVal: 1000, penalty: '회식비 1,000만', owner: null },
+            { id:37, type: 'special', name: '다혈질 천재', grade: 'Special', stat: '기술 +60', salary: 6000, salaryDisplay: '6,000만', revenue: 0, expected: '💰 위험부담 有', effect: '50% 확률로 싸움(비용)', penaltyVal: 2000, penalty: '기물 파손비 2,000만', owner: null },
+            { id:38, type: 'special', name: '로또 당첨자', grade: 'Special', stat: '행운 +100', salary: 5000, salaryDisplay: '5,000만', revenue: 0, expected: '💰 대박확률 증가', effect: '주사위 게임 2배', penaltyVal: 2000, penalty: '직원 사기 저하 (2,000만)', owner: null },
+            { id:39, type: 'special', name: 'ChatGPT 고수', grade: 'Special', stat: '지식 +40', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '퀴즈 미션 검색 찬스', penaltyVal: 1000, penalty: '계정비 1,000만', owner: null },
+            { id:40, type: 'special', name: '야생 생존 전문가', grade: 'Special', stat: '생존 +50', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '천재지변 피해 없음', penaltyVal: 2000, penalty: '위약금 1,000만', owner: null },
+            { id:41, type: 'special', name: '멀티플레이어 경리', grade: 'C', stat: '만능 +15', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '가성비 좋음', penaltyVal: 3000, penalty: '업무 마비 (3,000만)', owner: null },
+            { id:42, type: 'special', name: '야근 요정', grade: 'C', stat: '야간 +20', salary: 3500, salaryDisplay: '3,500만', revenue: 1500, expected: '💰 매출 +1,500만', effect: '밤에 능력 2배', penaltyVal: 1000, penalty: '병원비 1,000만', owner: null },
+            { id:43, type: 'special', name: '사내 정치왕', grade: 'C', stat: '정치 +50', salary: 5000, salaryDisplay: '5,000만', revenue: 0, expected: '💰 생존가치', effect: '해고 불가', penaltyVal: 5000, penalty: '소송 비용 5,000만', owner: null },
+            { id:44, type: 'special', name: '아이디어 뱅크', grade: 'B', stat: '창의 +40', salary: 5000, salaryDisplay: '5,000만', revenue: 2500, expected: '💰 매출 +2,500만', effect: '대박 아이템 확률 증가', penaltyVal: 2000, penalty: '실패 비용 2,000만', owner: null },
+            { id:45, type: 'special', name: '물류 창고장', grade: 'B', stat: '관리 +20', salary: 4500, salaryDisplay: '4,500만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '재고 관리 비용 절감', penaltyVal: 2000, penalty: '재고 손실 2,000만', owner: null },
+            { id:46, type: 'special', name: '건물주 아들', grade: 'B', stat: '부동산 +50', salary: 10000, salaryDisplay: '1억 (지분)', revenue: 0, expected: '💰 임대료 절감', effect: '임대료 50% 할인', penaltyVal: 10000, penalty: '임대료 2배 인상', owner: null },
+            { id:47, type: 'special', name: '유행어 제조기', grade: 'B', stat: '센스 +30', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '마케팅 대박 확률 증가', penaltyVal: 1500, penalty: '저작권 분쟁 1,500만', owner: null },
+            { id:48, type: 'special', name: '미슐랭 쉐프 출신', grade: 'B', stat: '요리 +50', salary: 5000, salaryDisplay: '5,000만', revenue: 2500, expected: '💰 매출 +2,500만', effect: '직원 생산성 증가', penaltyVal: 2000, penalty: '식대 2배 증가', owner: null },
+            { id:49, type: 'special', name: '식물 키우기 장인', grade: 'C', stat: '공기청정 +5', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '업무 효율 5% 증가', penaltyVal: 500, penalty: '화분 처분비 500만', owner: null },
+            { id:50, type: 'special', name: '반려견 (마스코트)', grade: 'Special', stat: '귀여움 +MAX', salary: 500, salaryDisplay: '500만 (사료)', revenue: 250, expected: '💰 매출 +250만', effect: '방문 고객 매출 상승', penaltyVal: 500, penalty: '고객 항의 증가', owner: null },
+            { id:65, type: 'special', name: '사내 강사', grade: 'B', stat: '교육 +20', salary: 4000, salaryDisplay: '4,000만', revenue: 2000, expected: '💰 매출 +2,000만', effect: '직원 교육', penaltyVal: 1500, penalty: '위약금 1,500만', owner: null },
+            { id:66, type: 'special', name: '보안 요원', grade: 'C', stat: '체력 +10', salary: 3000, salaryDisplay: '3,000만', revenue: 1000, expected: '💰 매출 +1,000만', effect: '잡상인 차단', penaltyVal: 500, penalty: '위약금 500만', owner: null }
+        ];
+
+        const db_crisis_global = [ "📉 [경제] 글로벌 금융 위기! (전 팀 현금 10억 반납) \n[💡 방어 가능: 월가의 투자 귀재]", "📉 [경제] 금리 인상! (전 팀 비용 +1,000만) \n[💡 방어 가능: 칼같은 회계사]", "📉 [경제] 환율 폭락! (전 팀 매출 -500만) \n[💡 방어 가능: 글로벌 마케터]", "📉 [사회] 내수 시장 축소 (전 팀 매출 -500만) \n[💡 방어 가능: 전설의 영업왕]" ];
+        const db_opp_global = [ "📈 [경제] 경기 부양책! (매출 +5,000만) \n[🔥 부스트: 전설의 영업왕]", "📈 [경제] 금리 인하 (비용 -1,000만) \n[🔥 부스트: 월가의 투자 귀재]" ];
+        const db_mission = [ "⚡ 선생님과 가위바위보 승리 (+500만)", "⚡ '화이팅' 선창 팀 (+300만)" ];
+
+
+        // *** 2. 함수 정의 ***
+
+        // DOMContentLoaded를 사용하여 DOM 로딩 후 초기화
+        window.addEventListener('DOMContentLoaded', function() {
+            // 인트로 애니메이션
+            setTimeout(() => { document.getElementById('line1-1').style.opacity = 1; document.getElementById('line1-1').style.transform = 'translateY(0)'; }, 500);
+            setTimeout(() => { document.getElementById('line1-2').style.opacity = 1; document.getElementById('line1-2').style.transform = 'translateY(0)'; }, 1500);
+            setTimeout(() => { document.getElementById('line1-3').style.opacity = 1; document.getElementById('line1-3').style.transform = 'translateY(0)'; }, 2500);
+            setTimeout(() => { 
+                const btn = document.getElementById('enterBtn1');
+                if(btn) { btn.style.opacity = 1; btn.style.animation = "pulse 2s infinite"; }
+            }, 3500);
+            
+            // 데이터 초기화
+            personnelData.forEach(p => { p.initialRevenue = p.revenue; p.hiredRound = null; });
+            
+            // 렌더링 호출
+            renderTeamCards();
+            updateAllTeamSelects();
+            renderPersonnelCards(currentFilter); // 초기 렌더링 추가
+        });
+
+        function goToIntro() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('introPage').style.display = 'flex';
+        }
+        function showBrandingPage() { document.getElementById('introPage').style.display = 'none'; document.getElementById('brandingPage').style.display = 'flex'; }
+        function startGameDashboard() { document.getElementById('brandingPage').style.display = 'none'; document.getElementById('gamePage').style.display = 'block'; calculate(); }
+        function togglePersonnelPage() {
+            const gamePage = document.getElementById('gamePage'); const hrPage = document.getElementById('personnelPage');
+            if (gamePage.style.display === 'none') { 
+                gamePage.style.display = 'block'; hrPage.style.display = 'none'; calculate(); 
+            } else { 
+                gamePage.style.display = 'none'; hrPage.style.display = 'block'; renderPersonnelCards(currentFilter); 
+            }
+        }
+
+        // 조 관리
+        function addTeam() {
+            const newId = teams.length + 1;
+            const colors = ['#e74c3c', '#f1c40f', '#1abc9c', '#34495e', '#95a5a6'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            teams.push({ id: newId, name: `${newId}조`, color: randomColor, logo: null, valueUps: [], welfares: [], baseCost: 0 });
+            teamLoans[newId] = [];
+            renderTeamCards(); updateAllTeamSelects();
+        }
+        function removeTeam() {
+            if(teams.length <= 1) return;
+            teams.pop();
+            renderTeamCards(); updateAllTeamSelects();
+        }
+        function updateTeamName(id, newName) {
+            const team = teams.find(t => t.id == id);
+            if (team) { team.name = newName; updateAllTeamSelects(); }
+        }
+        function uploadLogo(id, inputElement) {
+            if (inputElement.files && inputElement.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const team = teams.find(t => t.id == id);
+                    if(team) {
+                        team.logo = e.target.result;
+                        const img = document.getElementById(`teamLogoImg_${id}`);
+                        const ph = document.getElementById(`teamLogoPlace_${id}`);
+                        if(img) { img.src = e.target.result; img.style.display = 'block'; }
+                        if(ph) ph.style.display = 'none';
+                    }
+                }
+                reader.readAsDataURL(inputElement.files[0]);
+            }
+        }
+        function updateAllTeamSelects() {
+            const options = `<option value="all">모든 조</option>` + teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            document.querySelectorAll('.team-select-all').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = options;
+                sel.value = currentVal || 'all'; 
+            });
+            const personnelPage = document.getElementById('personnelPage');
+            if(personnelPage && personnelPage.style.display === 'block') {
+               const searchVal = document.getElementById('searchInput').value;
+               renderPersonnelCards(currentFilter, searchVal);
+            }
+        }
+
+        // 모달 및 상점
+        function showMainMission() {
+            const content = mainMissions[round] || "현재 라운드에 배정된 미션이 없습니다.";
+            document.getElementById('modalTitle').innerText = `🏆 ${round}년차 메인 미션`;
+            document.getElementById('modalBody').innerText = content;
+            document.getElementById('modalAdminControls').style.display = 'flex';
+            document.getElementById('shopGrid').style.display = 'none';
+            document.getElementById('missionModal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('missionModal').style.display = 'none'; }
+        
+        // [수정3] 상점 UI에 파란색 매출 성장률 표시 추가
+        function openShop(teamId, type) {
+            const team = teams.find(t => t.id == teamId);
+            document.getElementById('modalTitle').innerText = (type === 'valueup') ? `🚀 ${team.name} 기업 VALUE-UP` : `🍀 ${team.name} 기업 복지`;
+            document.getElementById('modalBody').innerText = "원하는 항목을 선택하세요.";
+            document.getElementById('modalAdminControls').style.display = 'none';
+            const grid = document.getElementById('shopGrid');
+            grid.innerHTML = '';
+            grid.style.display = 'grid';
+            const items = (type === 'valueup') ? valueUpItems : welfareItems;
+            items.forEach(item => {
+                let costText = "";
+                if(item.maintenance) costText = `유지비: ${item.maintenance}만`;
+                else if(item.type === 'recurring') costText = `비용: ${item.desc}`;
+                else if(item.cost) costText = `비용: ${item.cost}만`;
+                let effectText = "";
+                if(item.value) effectText = `기업가치 +${item.value}`;
+                // 매출 성장률 표시 로직
+                let growthText = "";
+                if(item.growthRate) growthText = `<div style="color:var(--blue-color); font-weight:bold; margin-top:3px;">매출 성장 +${(item.growthRate*100)}%</div>`;
+                
+                let initialCostText = item.cost && item.maintenance ? `초기비용: ${item.cost}만 / ` : "";
+                
+                grid.innerHTML += `
+                    <div class="shop-item" onclick="buyItem(${teamId}, '${type}', '${item.id}')">
+                        <div class="shop-item-name">${item.name}</div>
+                        <div class="shop-item-cost">${initialCostText}${costText}</div>
+                        <div class="shop-item-effect">${effectText}</div>
+                        ${growthText}
+                    </div>`;
+            });
+            document.getElementById('missionModal').style.display = 'flex';
+        }
+        function buyItem(teamId, type, itemId) {
+            const team = teams.find(t => t.id == teamId);
+            let item, list;
+            if (type === 'valueup') { item = valueUpItems.find(i => i.id == itemId); list = team.valueUps; } 
+            else { item = welfareItems.find(i => i.id == itemId); list = team.welfares; }
+            if(list.find(i => i.id == itemId)) { alert("이미 보유 중입니다."); return; }
+            if (item.cost) {
+                const capInput = document.getElementById(`t${teamId}_cap`);
+                let currentCap = parseInt(capInput.value) || 0;
+                if (currentCap < item.cost) { alert(`자본금이 부족합니다. (필요: ${item.cost}만)`); return; }
+                if(confirm(`${item.name}을(를) 구매하시겠습니까?\n비용 ${item.cost}만원이 차감됩니다.`)) {
+                    capInput.value = currentCap - item.cost;
+                    list.push(item);
+                } else return;
+            } else {
+                if(!confirm(`${item.name}을(를) 적용하시겠습니까?`)) return;
+                list.push(item);
+            }
+            calculate();
+            closeModal(); renderTeamCards();
+        }
+        function removeItem(teamId, type, itemId) {
+            if(!confirm("해당 항목을 삭제하시겠습니까? 효과가 즉시 사라집니다.")) return;
+            const team = teams.find(t => t.id == teamId);
+            if (type === 'valueup') team.valueUps = team.valueUps.filter(i => i.id !== itemId);
+            else team.welfares = team.welfares.filter(i => i.id !== itemId);
+            calculate();
+            renderTeamCards();
+        }
+
+        // 렌더링
+        function renderTeamCards() {
+            const grid = document.getElementById('dashboardGrid');
+            if(!grid) return; 
+            
+            let backup = {};
+            teams.forEach(t => {
+                if(document.getElementById(`t${t.id}_cap`)) {
+                    backup[t.id] = {
+                        cap: document.getElementById(`t${t.id}_cap`).value,
+                        rev: document.getElementById(`t${t.id}_rev`).value
+                    };
+                }
+            });
+            grid.innerHTML = '';
+            if(teams.length <= 2) grid.style.gridTemplateColumns = "repeat(2, 1fr)";
+            else if(teams.length === 3) grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+            else grid.style.gridTemplateColumns = "repeat(4, 1fr)"; 
+
+            teams.forEach(t => {
+                const cap = backup[t.id] ? backup[t.id].cap : 5000;
+                const rev = backup[t.id] ? backup[t.id].rev : 0;
+                const hasLogo = t.logo !== null;
+                const logoDisplay = hasLogo ? 'block' : 'none';
+                const placeDisplay = hasLogo ? 'none' : 'flex';
+
+                let valueUpTags = t.valueUps.map(i => `<div class="item-tag"><span>${i.name}</span><span class="item-delete" onclick="removeItem(${t.id}, 'valueup', '${i.id}')">&times;</span></div>`).join('');
+                if(valueUpTags === '') valueUpTags = '<div class="empty-message">없음</div>';
+
+                let welfareTags = t.welfares.map(i => `<div class="item-tag"><span>${i.name}</span><span class="item-delete" onclick="removeItem(${t.id}, 'welfare', '${i.id}')">&times;</span></div>`).join('');
+                if(welfareTags === '') welfareTags = '<div class="empty-message">없음</div>';
+
+                // [수정2] 매출 입력창 옆에 성과금 효과 표시용 span 추가
+                grid.innerHTML += `
+                <div class="team-card" id="team${t.id}-card" style="border-top: 5px solid ${t.color};">
+                    <div class="team-header">
+                        <div class="logo-wrapper" onclick="document.getElementById('logoInput_${t.id}').click()">
+                            <img id="teamLogoImg_${t.id}" src="${t.logo || ''}" class="team-logo" style="display:${logoDisplay}">
+                            <div id="teamLogoPlace_${t.id}" class="logo-placeholder" style="display:${placeDisplay}">
+                                <i class="fas fa-camera"></i>
+                                <span>로고 업로드</span>
+                            </div>
+                            <input type="file" id="logoInput_${t.id}" style="display:none" accept="image/*" onchange="uploadLogo(${t.id}, this)">
+                        </div>
+                        <input type="text" class="team-name" value="${t.name}" oninput="updateTeamName(${t.id}, this.value)">
+                    </div>
+                    <div class="input-row"><span>기초자본(만)</span><input type="number" id="t${t.id}_cap" class="num-input" value="${cap}" oninput="calculate()"></div>
+                    <div class="input-row value-row"><span>💎 기업가치(점수)</span><input type="number" id="t${t.id}_value" class="num-input readonly-input" value="0" readonly></div>
+                    <div class="loan-area">
+                        <div class="loan-info"><span>가능액: <span id="t${t.id}_loanLimit">0</span>만</span></div>
+                        <button class="btn-loan" onclick="requestLoan(${t.id})">💰 대출 신청</button>
+                        <div class="loan-status" id="t${t.id}_loanStatus"></div>
+                    </div>
+                    <div class="input-row">
+                        <span>(+)매출</span>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="t${t.id}_rev" class="num-input" value="${rev}" style="color:#2980b9" oninput="calculate()">
+                            <span id="t${t.id}_rev_bonus" style="font-size:0.75rem; color:var(--green-color); margin-left:5px; white-space:nowrap; font-weight:bold;"></span>
+                        </div>
+                    </div>
+                    <div class="input-row"><span>(-)비용</span><input type="number" id="t${t.id}_cost" class="num-input" value="0" style="color:#c0392b" onchange="handleCostManualChange(${t.id}, this.value)"></div>
+                    <div class="input-row"><span>(-)이자</span><input type="number" id="t${t.id}_interest" class="num-input readonly-input" value="0" readonly></div>
+                    <div class="input-row"><span>(-)세금(10%)</span><input type="number" id="t${t.id}_tax" class="num-input tax-input" value="0" readonly></div>
+                    <div class="total-money" id="t${t.id}_total">0 원</div>
+                    <div class="bar-bg"><div id="t${t.id}_bar" class="bar-fill" style="background:${t.color};"></div></div>
+                    <div class="section-container">
+                        <div class="section-title">👑 보유 인재 <span id="t${t.id}_cardCount" class="card-count">(영입: 0)</span></div>
+                        <div id="t${t.id}-hires"></div>
+                    </div>
+                    <div class="section-container">
+                        <div class="section-title">🚀 기업 VALUE-UP <button class="btn-add-item" onclick="openShop(${t.id}, 'valueup')">+</button></div>
+                        <div id="t${t.id}-valueup">${valueUpTags}</div>
+                    </div>
+                    <div class="section-container">
+                        <div class="section-title">🍀 기업 복지 <button class="btn-add-item" onclick="openShop(${t.id}, 'welfare')">+</button></div>
+                        <div id="t${t.id}-welfare">${welfareTags}</div>
+                    </div>
+                </div>`;
+            });
+            updateDashboardHires(); calculate(); 
+        }
+
+        function handleCostManualChange(teamId, newValue) {
+            const team = teams.find(t => t.id == teamId);
+            let salarySum = 0;
+            personnelData.forEach(p => { if(p.owner == teamId) salarySum += p.salary; });
+            
+            let dynamicCost = 0;
+            team.valueUps.forEach(v => { if(v.maintenance) dynamicCost += v.maintenance; });
+            team.welfares.forEach(w => { 
+                if(w.type === 'recurring') {
+                    dynamicCost += Math.floor((salarySum / 12) * w.costRate); 
+                }
+            });
+            
+            team.baseCost = parseInt(newValue) - dynamicCost;
+            calculate();
+        }
+
+        function calculate() {
+            teams.forEach(t => {
+                if(!document.getElementById(`t${t.id}_cap`)) return;
+                const c = Number(document.getElementById(`t${t.id}_cap`).value)||0;
+                let r = Number(document.getElementById(`t${t.id}_rev`).value)||0; 
+                
+                let salarySum = 0;
+                personnelData.forEach(p => {
+                    if(p.owner == t.id) salarySum += p.salary;
+                });
+
+                let valueUpMaintenance = 0; 
+                let valueUpScore = 0;
+                t.valueUps.forEach(v => {
+                    if(v.maintenance) valueUpMaintenance += v.maintenance;
+                    if(v.value) valueUpScore += v.value;
+                });
+
+                let welfareCost = 0; 
+                let revenueMultiplier = 1.0; 
+                let welfareScore = 0; 
+                t.welfares.forEach(w => {
+                    if(w.type === 'recurring') {
+                        welfareCost += Math.floor((salarySum / 12) * w.costRate);
+                        revenueMultiplier += w.growthRate; 
+                    }
+                    if(w.value) welfareScore += w.value; 
+                });
+
+                let totalDisplayCost = t.baseCost + valueUpMaintenance + welfareCost;
+                document.getElementById(`t${t.id}_cost`).value = totalDisplayCost;
+
+                // [수정2] 최종 매출 계산 및 실시간 반영 표시
+                let finalRevenue = Math.floor(r * revenueMultiplier);
+                let bonusRevenue = finalRevenue - r;
+                
+                // 보너스 금액 표시 업데이트
+                const bonusSpan = document.getElementById(`t${t.id}_rev_bonus`);
+                if(bonusRevenue > 0) {
+                    bonusSpan.innerText = `(+성과금: ${bonusRevenue}만)`;
+                } else {
+                    bonusSpan.innerText = "";
+                }
+                
+                const loanInterestInput = document.getElementById(`t${t.id}_interest`);
+                let interest = 0;
+                if(teamLoans[t.id]) teamLoans[t.id].forEach(l => { interest += Math.floor(l.amount * 0.1); });
+                loanInterestInput.value = interest;
+                const tax = Math.floor(finalRevenue * 0.1);
+                document.getElementById(`t${t.id}_tax`).value = tax;
+                
+                const tot = c + finalRevenue - totalDisplayCost - interest - tax;
+                document.getElementById(`t${t.id}_total`).innerText = formatCurrency(tot);
+                document.getElementById(`t${t.id}_bar`).style.width = Math.min((tot/10000)*100, 100) + "%";
+                
+                let personnelScore = 0;
+                personnelData.forEach(p => {
+                    if(p.owner == t.id) {
+                        if(p.grade === 'S') personnelScore += 100;
+                        else if(p.grade === 'A') personnelScore += 70;
+                        else if(p.grade === 'B') personnelScore += 50;
+                        else if(p.grade === 'C') personnelScore += 20;
+                    }
+                });
+                const assetScore = Math.floor(tot / 100); 
+                const finalValue = assetScore + personnelScore + valueUpScore + welfareScore;
+                document.getElementById(`t${t.id}_value`).value = finalValue;
+                updateLoanStatus(t.id);
+                let maxSlots = 1;
+                if(tot >= 20000) maxSlots = Math.floor(tot / 10000);
+                const currentHiredCount = personnelData.filter(p => p.owner == t.id).length;
+                const remaining = Math.max(0, maxSlots - currentHiredCount);
+                document.getElementById(`t${t.id}_cardCount`).innerText = `(영입: ${remaining})`;
+            });
+        }
+
+        function updateDashboardHires() {
+            teams.forEach(t => { 
+                const targetDiv = document.getElementById(`t${t.id}-hires`);
+                if(targetDiv) targetDiv.innerHTML = ''; 
+            });
+            personnelData.forEach(p => {
+                if(p.owner !== null) {
+                    const tenure = round - p.hiredRound + 1;
+                    const targetDiv = document.getElementById(`t${p.owner}-hires`);
+                    let badgeColor = "";
+                    if(p.grade === 'S') badgeColor = "#d4af37"; else if(p.grade === 'A') badgeColor = "#c0392b"; else if(p.grade === 'B') badgeColor = "#2980b9"; else if(p.grade === 'C') badgeColor = "#7f8c8d"; else badgeColor = "#8e44ad";
+                    if(targetDiv) {
+                        targetDiv.innerHTML += `
+                            <div class="hired-item">
+                                <div class="hired-info">
+                                    <div class="hired-name-row">
+                                        <span><span style="color:${badgeColor}; font-weight:900;">[${p.grade}]</span> ${p.name} <span class="hired-salary-tag">(비용: ${p.salaryDisplay})</span></span>
+                                        <span class="hired-tenure">${tenure}년차</span>
+                                    </div>
+                                    <span class="hired-expected">현재 매출: +${(p.revenue / 10000).toFixed(1)}억</span>
+                                    <span class="hired-effect">${p.effect}</span>
+                                </div>
+                                <button class="btn-fire" onclick="firePersonnel(${p.id})">퇴사</button>
+                            </div>`;
+                    }
+                }
+            });
+        }
+
+        function applyEffectLogic(teamSelectId, amountId, typeId) {
+            const teamVal = document.getElementById(teamSelectId).value;
+            const amount = parseInt(document.getElementById(amountId).value);
+            const type = document.getElementById(typeId).value;
+            if (!amount || isNaN(amount)) { alert("금액을 입력하세요."); return; }
+            const targetTeams = teamVal === 'all' ? teams : teams.filter(t => t.id == teamVal);
+            targetTeams.forEach(t => {
+                if (type === 'rev') {
+                    const el = document.getElementById(`t${t.id}_rev`);
+                    el.value = parseInt(el.value) + amount;
+                } else if (type === 'cost') {
+                    t.baseCost += amount;
+                } else if (type === 'cap_plus') {
+                    const el = document.getElementById(`t${t.id}_cap`);
+                    el.value = parseInt(el.value) + amount;
+                } else if (type === 'cap_minus') {
+                    const el = document.getElementById(`t${t.id}_cap`);
+                    el.value = parseInt(el.value) - amount;
+                }
+            });
+            calculate(); alert("적용되었습니다.");
+        }
+        function applyManualEffect() { applyEffectLogic('manualTeamSelect', 'manualAmount', 'manualType'); }
+        function applyModalEffect() { applyEffectLogic('modalTeamSelect', 'modalAmount', 'modalType'); }
+
+        function requestLoan(teamId) {
+            const ev = parseInt(document.getElementById(`t${teamId}_value`).value) || 0;
+            const limit = ev * 100; 
+            if (limit <= 0) { alert("기업가치가 없어 대출 불가"); return; }
+            const amountStr = prompt(`대출 가능: ${limit.toLocaleString()}만원\n금액 입력 (만원):`);
+            if (!amountStr) return;
+            const amount = parseInt(amountStr);
+            if (isNaN(amount) || amount <= 0) return;
+            if (amount > limit) { alert("한도 초과"); return; }
+            const capInput = document.getElementById(`t${teamId}_cap`);
+            capInput.value = parseInt(capInput.value) + amount;
+            teamLoans[teamId].push({ amount: amount, startRound: round, repayRound: round + 2 });
+            updateLoanStatus(teamId); calculate();
+        }
+        function updateLoanStatus(teamId) {
+            const statusDiv = document.getElementById(`t${teamId}_loanStatus`);
+            const limitDiv = document.getElementById(`t${teamId}_loanLimit`);
+            const ev = parseInt(document.getElementById(`t${teamId}_value`).value) || 0;
+            limitDiv.innerText = (ev * 100).toLocaleString();
+            const loans = teamLoans[teamId];
+            if (!loans || loans.length === 0) { statusDiv.innerText = ""; return; }
+            let totalLoan = 0; let msg = "";
+            loans.forEach(l => { totalLoan += l.amount; msg += `${l.repayRound}R 상환: ${l.amount}만\n`; });
+            statusDiv.innerText = `총 대출: ${totalLoan}만\n` + msg;
+        }
+        function pickRandomNews() {
+            let list = Math.random() < 0.5 ? db_crisis_global : db_opp_global;
+            let type = list === db_crisis_global ? 'crisis' : 'opportunity';
+            const content = list[Math.floor(Math.random() * list.length)];
+            const box = document.getElementById('newsBox'), text = document.getElementById('newsText'), badge = document.getElementById('scopeBadge');
+            badge.style.display = 'inline-block'; badge.innerText = '뉴스 속보'; text.innerText = content;
+            if(type === 'crisis') { box.className = "news-box blink-red"; badge.style.background = "#c0392b"; text.style.color = "#c0392b"; }
+            else { box.className = "news-box blink-blue"; badge.style.background = "#2980b9"; text.style.color = "#2980b9"; }
+        }
+        function pickMission() {
+             const content = db_mission[Math.floor(Math.random() * db_mission.length)];
+             document.getElementById('modalTitle').innerText = "⚡ 돌발 미션";
+             document.getElementById('modalBody').innerText = content;
+             document.getElementById('modalAdminControls').style.display = 'flex';
+             document.getElementById('shopGrid').style.display = 'none';
+             document.getElementById('missionModal').style.display = 'flex';
+        }
+        
+        let timer = null, daysLeft = 365;
+        function updateTimerDisplay() { document.getElementById('timerDisplay').innerText = daysLeft + "일"; }
+        function timerStart() { if(timer) return; timer = setInterval(() => { if(daysLeft > 0) { daysLeft--; updateTimerDisplay(); } else { timerStop(); alert("1년 종료!"); } }, 3500); }
+        function timerStop() { clearInterval(timer); timer = null; }
+        function timerReset() { timerStop(); daysLeft = 365; updateTimerDisplay(); }
+        function formatCurrency(v) {
+            const s = v < 0 ? "-" : "", a = Math.abs(v);
+            if(a < 10000) return s + a.toLocaleString() + " 만원";
+            const u = Math.floor(a/10000), m = a%10000;
+            return s + u + "억 " + (m? m.toLocaleString()+"만원" : "원");
+        }
+
+        // 인재영입소 렌더링
+        function renderPersonnelCards(filterType, searchQuery = "") {
+            if(filterType) currentFilter = filterType;
+            const grid = document.getElementById('cardGrid');
+            if(!grid) return; 
+            grid.innerHTML = ''; 
+
+            const filteredData = personnelData.filter(item => {
+                const typeMatch = currentFilter === 'all' || item.type === currentFilter;
+                const searchMatch = item.name.includes(searchQuery);
+                return typeMatch && searchMatch;
+            });
+            const teamOptions = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+
+            filteredData.forEach(p => {
+                let bgClass = '';
+                if(p.grade === 'S') bgClass = 'bg-S'; else if(p.grade === 'A') bgClass = 'bg-A'; else if(p.grade === 'B') bgClass = 'bg-B'; else if(p.grade === 'C') bgClass = 'bg-C'; else bgClass = 'bg-Special';
+
+                const isSoldOut = p.owner !== null;
+                let isLocked = false;
+                if (!isSoldOut) {
+                    if (round === 1 && (p.grade === 'S' || p.grade === 'A' || p.grade === 'Special')) isLocked = true;
+                    else if (round === 2 && p.grade === 'S') isLocked = true;
+                }
+                const soldOutClass = isSoldOut ? 'sold-out' : '';
+                const lockedClass = isLocked ? 'locked' : '';
+                let overlayHTML = '';
+                if (isSoldOut) overlayHTML = `<div class="sold-out-overlay"></div>`;
+                else if (isLocked) overlayHTML = `<div class="overlay"><i class="fas fa-lock"></i><span>${p.grade}급 잠금</span></div>`;
+                
+                let hiringCost = 0;
+                if (p.grade === 'S') hiringCost = 2000; else if (p.grade === 'A') hiringCost = 1000; else if (p.grade === 'B') hiringCost = 500;
+                
+                const controlsHTML = (isSoldOut || isLocked) ? '' : `
+                    <div class="hire-controls">
+                        <select id="teamSelect_${p.id}" class="team-select">${teamOptions}</select>
+                        <button class="btn-hire-action" onclick="hirePersonnel(${p.id})">영입 (${hiringCost > 0 ? hiringCost + '만' : '무료'})</button>
+                    </div>`;
+
+                grid.innerHTML += `
+                    <div class="person-card grade-${p.grade} ${soldOutClass} ${lockedClass}">
+                        ${overlayHTML}
+                        <div class="pc-header ${bgClass}"><span>${p.name}</span> <span>${p.grade}급</span></div>
+                        <div class="pc-body">
+                            <div class="pc-stat"><i class="fas fa-bolt"></i> ${p.stat}</div>
+                            <div class="pc-salary">연봉: ${p.salaryDisplay}</div>
+                            <div class="pc-expected">${p.expected}</div>
+                            <div class="pc-effect">${p.effect}</div>
+                            <div class="pc-penalty">⚠️ ${p.penalty}</div>
+                        </div>
+                        ${controlsHTML}
+                    </div>`;
+            });
+        }
+        function filterPersonnel(type, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const searchVal = document.getElementById('searchInput').value;
+            renderPersonnelCards(type, searchVal);
+        }
+        function searchPersonnel() {
+            const searchVal = document.getElementById('searchInput').value;
+            renderPersonnelCards(currentFilter, searchVal);
+        }
+        function hirePersonnel(personId) {
+            const teamId = document.getElementById(`teamSelect_${personId}`).value;
+            const person = personnelData.find(p => p.id === personId);
+            const team = teams.find(t => t.id == teamId);
+            const teamName = team.name;
+
+            if(person) {
+                const capInput = document.getElementById(`t${teamId}_cap`);
+                const currentCap = parseInt(capInput.value) || 0;
+                const rev = parseInt(document.getElementById(`t${teamId}_rev`).value)||0;
+                const interest = parseInt(document.getElementById(`t${teamId}_interest`).value)||0;
+                const currentCostVal = parseInt(document.getElementById(`t${teamId}_cost`).value)||0;
+                const totalAsset = currentCap + rev - currentCostVal - interest;
+                
+                let maxSlots = 1;
+                if (totalAsset >= 20000) maxSlots = Math.floor(totalAsset / 10000); 
+                const currentHiredCount = personnelData.filter(p => p.owner == teamId).length;
+                if (currentHiredCount >= maxSlots) { alert(`[영입 불가] 영입 카드가 부족합니다.\n현재: ${currentHiredCount}명 / 최대: ${maxSlots}명`); return; }
+                
+                let hiringCost = 0;
+                if (person.grade === 'S') hiringCost = 2000; else if (person.grade === 'A') hiringCost = 1000; else if (person.grade === 'B') hiringCost = 500;
+                if (currentCap < hiringCost) { alert(`[영입 실패] 기초자본 부족 (필요: ${hiringCost}만원)`); return; }
+                
+                if(confirm(`${person.name}을(를) ${teamName}로 영입하시겠습니까?`)) {
+                    capInput.value = currentCap - hiringCost; 
+                    person.owner = teamId;
+                    person.hiredRound = round; 
+                    person.revenue = person.initialRevenue; 
+                    
+                    team.baseCost += parseInt(person.salary);
+
+                    const revInput = document.getElementById(`t${teamId}_rev`);
+                    revInput.value = parseInt(revInput.value) + parseInt(person.revenue);
+                    const searchVal = document.getElementById('searchInput').value;
+                    renderPersonnelCards(currentFilter, searchVal); updateDashboardHires(); calculate(); 
+                    alert("영입 완료!");
+                }
+            }
+        }
+        function firePersonnel(personId) {
+            const person = personnelData.find(p => p.id === personId);
+            if(person) {
+                if(confirm(`[경고] ${person.name}을(를) 퇴사시키겠습니까?`)) {
+                    const teamId = person.owner;
+                    const team = teams.find(t => t.id == teamId);
+                    person.owner = null; 
+                    person.hiredRound = null;
+                    
+                    team.baseCost -= parseInt(person.salary);
+                    team.baseCost += parseInt(person.penaltyVal);
+                    if(team.baseCost < 0) team.baseCost = 0;
+
+                    const revInput = document.getElementById(`t${teamId}_rev`);
+                    revInput.value = Math.max(0, parseInt(revInput.value) - parseInt(person.revenue));
+                    updateDashboardHires(); 
+                    const searchVal = document.getElementById('searchInput').value;
+                    renderPersonnelCards(currentFilter, searchVal); calculate(); 
+                    alert("퇴사 처리 완료");
+                }
+            }
+        }
+        function nextRound() {
+            if(!confirm("연말 결산을 진행하시겠습니까?")) return;
+            teams.forEach(t => {
+                if(!document.getElementById(`t${t.id}_cap`)) return;
+                let cap = Number(document.getElementById(`t${t.id}_cap`).value)||0;
+                let r = Number(document.getElementById(`t${t.id}_rev`).value)||0;
+                
+                let salarySum = 0;
+                personnelData.forEach(p => { if(p.owner == t.id) salarySum += p.salary; });
+                
+                let revenueMultiplier = 1.0;
+                t.welfares.forEach(w => { if(w.type === 'recurring') revenueMultiplier += w.growthRate; });
+                let finalRevenue = Math.floor(r * revenueMultiplier);
+
+                let cost = Number(document.getElementById(`t${t.id}_cost`).value)||0;
+                const interest = Number(document.getElementById(`t${t.id}_interest`).value)||0;
+                const tax = Number(document.getElementById(`t${t.id}_tax`).value)||0;
+                
+                let principalRepay = 0;
+                const loans = teamLoans[t.id];
+                if(loans) {
+                    for (let i = loans.length - 1; i >= 0; i--) {
+                        if (loans[i].repayRound === round + 1) {
+                            principalRepay += loans[i].amount;
+                            loans.splice(i, 1); 
+                        }
+                    }
+                }
+                let finalCap = cap + finalRevenue - cost - interest - tax - principalRepay;
+                if (principalRepay > 0) alert(`${t.name} 대출 원금 ${principalRepay}만원 상환`);
+                document.getElementById(`t${t.id}_cap`).value = finalCap;
+                
+                personnelData.forEach(p => {
+                    if(p.owner == t.id) {
+                        p.salary = Math.floor(p.salary * 1.1); 
+                        p.salaryDisplay = p.salary >= 10000 ? (p.salary/10000).toFixed(1) + '억' : p.salary.toLocaleString() + '만';
+                    }
+                });
+
+                let salaryTotal = 0;
+                personnelData.forEach(p => { if(p.owner == t.id) salaryTotal += p.salary; });
+                t.baseCost = salaryTotal;
+                
+                document.getElementById(`t${t.id}_rev`).value = 0;
+                document.getElementById(`t${t.id}_tax`).value = 0;
+            });
+            year++; round++; 
+            document.getElementById('yearDisplay').innerText = year; 
+            let roundText = round + " 라운드";
+            if(round === 1) roundText += " (B/C급 가능)"; else if(round === 2) roundText += " (A급/Special 해금)"; else roundText += " (전 등급 해금)";
+            document.getElementById('roundDisplay').innerText = roundText;
+            
+            personnelData.forEach(p => {
+                if(p.owner !== null && p.hiredRound !== null) {
+                    const teamId = p.owner;
+                    if(teams.find(t => t.id == teamId)) {
+                        const tenure = round - p.hiredRound + 1;
+                        const newRevenue = p.initialRevenue * tenure;
+                        p.revenue = newRevenue;
+                        const revInput = document.getElementById(`t${teamId}_rev`);
+                        revInput.value = parseInt(revInput.value) + newRevenue;
+                    }
+                }
+            });
+            timerReset(); calculate(); updateDashboardHires();
+            if(document.getElementById('personnelPage').style.display === 'block') {
+                const searchVal = document.getElementById('searchInput').value;
+                renderPersonnelCards(currentFilter, searchVal);
+            }
+            alert(`${year}년 시작! (물가상승: 모든 직원 연봉 10% 인상됨)`);
+        }
+    </script>
+</body>
+</html>
